@@ -3,7 +3,7 @@ use jsonrpc_actix::methods::RpcOutput;
 use jsonrpc_actix::types::response::RpcPayload;
 use jsonrpc_actix::{handle::rpc_handler, methods::RpcModule, types::params::Params};
 
-async fn foo(params: Params, _ctx: ()) -> RpcOutput {
+async fn foo(_ctx: (), _params: Params) -> RpcOutput {
     Ok(RpcPayload::Result(serde_json::from_str("bar").unwrap()))
 }
 

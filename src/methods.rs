@@ -7,17 +7,17 @@ use futures_util::Future;
 pub type RpcOutput = Result<RpcPayload, Box<dyn std::error::Error>>;
 
 pub trait AsyncFn<Ctx: 'static> {
-    fn call(&self, params: Params, ctx: Ctx) -> BoxFuture<'static, RpcOutput>;
+    fn call(&self, ctx: Ctx, params: Params) -> BoxFuture<'static, RpcOutput>;
 }
 
 impl<T, F, Ctx> AsyncFn<Ctx> for T
 where
-    T: Fn(Params, Ctx) -> F,
+    T: Fn(Ctx, Params) -> F,
     F: Future<Output = RpcOutput> + 'static + Send,
     Ctx: 'static,
 {
-    fn call(&self, params: Params, ctx: Ctx) -> BoxFuture<'static, RpcOutput> {
-        Box::pin(self(params, ctx))
+    fn call(&self, ctx: Ctx, params: Params) -> BoxFuture<'static, RpcOutput> {
+        Box::pin(self(ctx, params))
     }
 }
 
@@ -46,7 +46,7 @@ impl<Ctx: Clone + 'static> RpcModule<Ctx> {
             return Ok(ErrorCode::MethodNotFound.into());
         };
 
-        call.call(params, self.ctx.clone()).await
+        call.call(self.ctx.clone(), params).await
     }
 
     pub fn register<F>(&mut self, method: &'static str, call: F)
