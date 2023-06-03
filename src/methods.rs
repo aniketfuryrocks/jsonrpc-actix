@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::types::{error::code::ErrorCode, params::Params, response::RpcPayload};
 use futures_util::{future::BoxFuture, Future};
+use serde::de::DeserializeOwned;
 
 pub type RpcOutput = Result<RpcPayload, Box<dyn std::error::Error>>;
 
@@ -17,6 +18,28 @@ where
 {
     fn call(&self, ctx: Ctx, params: Params) -> BoxFuture<'static, RpcOutput> {
         Box::pin(self(ctx, params))
+    }
+}
+
+pub trait IntoAsyncFn<Ctx: 'static, Args> {
+    fn convert(self) -> Box<dyn AsyncFn<Ctx>>;
+}
+
+impl<Func, Fut, Ctx, A, B> IntoAsyncFn<Ctx, (A, B)> for Func
+where
+    Func: Fn(Ctx, A, B) -> Fut + 'static,
+    Fut: Future<Output = RpcOutput> + 'static + Send,
+    Ctx: 'static,
+    A: DeserializeOwned + 'static,
+    B: DeserializeOwned + 'static,
+{
+    fn convert(self) -> Box<dyn AsyncFn<Ctx>> {
+        Box::new(move |ctx: Ctx, params: Params| {
+            let mut params = params.unwrap().into_iter();
+            let (A, B) = serde_json::from_value(params.next().unwrap()).unwrap();
+
+            self(ctx, A, B)
+        })
     }
 }
 
@@ -48,11 +71,11 @@ impl<Ctx: Clone + 'static> RpcModule<Ctx> {
         call.call(self.ctx.clone(), params).await
     }
 
-    pub fn register<F>(&mut self, method: &'static str, call: F)
+    pub fn register<F, Args>(&mut self, method: &'static str, call: F)
     where
-        F: AsyncFn<Ctx> + Send + Sync + 'static,
+        F: IntoAsyncFn<Ctx, Args> + Send + Sync + 'static,
         Ctx: 'static,
     {
-        self.methods.insert(method, Box::new(call));
+        self.methods.insert(method, call.convert());
     }
 }

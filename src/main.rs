@@ -6,7 +6,8 @@ use jsonrpc_actix::{
 };
 use serde_json::json;
 
-async fn foo(_ctx: (), _params: Params) -> RpcOutput {
+async fn foo(_ctx: (), count: u32, b: u32) -> RpcOutput {
+    println!("{count} {b}");
     Ok(RpcPayload::Result(json!("bar")))
 }
 
