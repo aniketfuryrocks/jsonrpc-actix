@@ -1,4 +1,4 @@
-use serde::{Deserializer, Serializer, Deserialize};
+use serde::{Deserialize, Deserializer, Serializer};
 use thiserror::Error;
 
 /// Parse error code.

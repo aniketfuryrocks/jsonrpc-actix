@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::types::{error::code::ErrorCode, params::Params, response::RpcPayload};
-use futures_util::future::BoxFuture;
-use futures_util::Future;
+use futures_util::{future::BoxFuture, Future};
 
 pub type RpcOutput = Result<RpcPayload, Box<dyn std::error::Error>>;
 
