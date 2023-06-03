@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// The main handler for JSONRPC server.
-pub async fn rpc_handler<Ctx: Clone>(
+pub async fn rpc_handler<Ctx: Clone + 'static>(
     body: Bytes,
     app_state: web::Data<RpcModule<Ctx>>,
 ) -> Result<HttpResponse, Error> {
