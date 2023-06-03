@@ -36,6 +36,7 @@ impl RpcResponse {
 /// "error":{"code":<code>,"message":<msg>,"data":<data>}
 /// ```
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum RpcPayload {
     /// Corresponds to successful JSON-RPC response with the field `result`.
     Result(Value),

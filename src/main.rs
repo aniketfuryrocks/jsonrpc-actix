@@ -1,10 +1,13 @@
 use actix_web::{web, App, HttpServer};
-use jsonrpc_actix::methods::RpcOutput;
-use jsonrpc_actix::types::response::RpcPayload;
-use jsonrpc_actix::{handle::rpc_handler, methods::RpcModule, types::params::Params};
+use jsonrpc_actix::{
+    handle::rpc_handler,
+    methods::{RpcModule, RpcOutput},
+    types::{params::Params, response::RpcPayload},
+};
+use serde_json::json;
 
 async fn foo(_ctx: (), _params: Params) -> RpcOutput {
-    Ok(RpcPayload::Result(serde_json::from_str("bar").unwrap()))
+    Ok(RpcPayload::Result(json!("bar")))
 }
 
 #[actix_web::main]
