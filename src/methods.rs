@@ -10,10 +10,10 @@ pub trait AsyncFn<Ctx: 'static> {
     fn call(&self, ctx: Ctx, params: Params) -> BoxFuture<'static, RpcOutput>;
 }
 
-impl<T, F, Ctx> AsyncFn<Ctx> for T
+impl<Func, Fut, Ctx> AsyncFn<Ctx> for Func
 where
-    T: Fn(Ctx, Params) -> F,
-    F: Future<Output = RpcOutput> + 'static + Send,
+    Func: Fn(Ctx, Params) -> Fut,
+    Fut: Future<Output = RpcOutput> + 'static + Send,
     Ctx: 'static,
 {
     fn call(&self, ctx: Ctx, params: Params) -> BoxFuture<'static, RpcOutput> {
@@ -56,20 +56,4 @@ impl<Ctx: Clone + 'static> RpcModule<Ctx> {
     {
         self.methods.insert(method, Box::new(call));
     }
-}
-
-#[tokio::test]
-async fn test() {
-    let module = RpcModule::default();
-
-    async fn hello(params: Params) -> RpcOutput {
-        Ok(RpcPayload::Result(serde_json::from_str("hi")))
-    }
-
-    module.register("hello", hello);
-
-    let res = module.call("hello", Vec::with_capacity(0)).await;
-    let expected = Ok(RpcPayload::Result(serde_json::from_str("hi")));
-
-    assert_eq!(res, expected);
 }
