@@ -1,5 +1,5 @@
 use actix_web::{web, App, HttpServer};
-use rpc_with_actix::{handle::rpc_handler, methods::RpcModule};
+use jsonrpc_actix::{handle::rpc_handler, methods::RpcModule};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
