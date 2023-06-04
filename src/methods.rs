@@ -37,7 +37,7 @@ macro_rules! factor_tuple_inner {
             if !arr.is_empty() {
                 return Err(crate::types::error::object::ErrorObject::new(
                     crate::types::error::code::ErrorCode::InvalidParams,
-                    "Invalid parameters: No parameters were expected"
+                    crate::types::error::code::NO_PARAMS_EXPECTED_MSG,
                 ));
             }
         }

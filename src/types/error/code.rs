@@ -40,6 +40,8 @@ pub const OVERSIZED_RESPONSE_MSG: &str = "Response is too big";
 pub const INTERNAL_ERROR_MSG: &str = "Internal error";
 /// Invalid params error message.
 pub const INVALID_PARAMS_MSG: &str = "Invalid params";
+/// Invalid params error message.
+pub const NO_PARAMS_EXPECTED_MSG: &str = "Invalid parameters: No parameters were expected";
 /// Invalid request error message.
 pub const INVALID_REQUEST_MSG: &str = "Invalid request";
 /// Method not found error message.
