@@ -21,11 +21,6 @@ where
     Ctx: 'static,
 {
     fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcOutput>, ErrorObject> {
-        if let Some(params) = &params {
-            if !(params.is_array() || params.is_null()) {
-                return Err(ErrorCode::InvalidRequest.into());
-            }
-        }
         Ok(Box::pin(self(ctx, params)?))
     }
 }
@@ -36,7 +31,7 @@ pub trait IntoAsyncFn<Ctx: 'static, Args> {
 
 macro_rules! factor_tuple_inner {
     ($self: ident, $ctx: ident, $params: ident,) => {{
-        if let Some(serde_json::Value::Array(arr)) = $params {
+        if let Some(arr) = $params {
             if !arr.is_empty() {
                 return Err(crate::types::error::object::ErrorObject::new(
                     crate::types::error::code::ErrorCode::InvalidParams,
@@ -48,17 +43,19 @@ macro_rules! factor_tuple_inner {
         Ok(($self)($ctx))
     }};
     ($self: ident, $ctx: ident, $params: ident, $($param:ident,)+) => {{
-        match serde_json::from_value($params.unwrap()) {
-            Ok(($($param,)+)) => {
-                Ok(($self)($ctx, $($param,)+))
-            },
-            Err(err) => {
-                Err(crate::types::error::object::ErrorObject::new(
-                    crate::types::error::code::ErrorCode::InvalidParams,
-                    format!("Invalid params: {err}")
-                ))
+        let mut params = $params.unwrap_or_default().into_iter();
+
+        Ok(($self)($ctx, $({
+            match serde_json::from_value(params.next().unwrap_or(serde_json::Value::Null)) {
+                Ok($param) => $param,
+                Err(err) => {
+                    return Err(crate::types::error::object::ErrorObject::new(
+                        crate::types::error::code::ErrorCode::InvalidParams,
+                        format!("Invalid params: {err}")
+                    ))
+                }
             }
-        }
+         },)+))
     }};
 }
 

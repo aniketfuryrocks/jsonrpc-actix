@@ -10,8 +10,8 @@ async fn get_version(_ctx: ()) -> RpcOutput {
     Ok(RpcPayload::Result(json!(0.1)))
 }
 
-async fn foo(_ctx: (), count: u32, b: u32) -> RpcOutput {
-    println!("{count} {b}");
+async fn foo(_ctx: (), count: Option<u32>, b: Option<u32>) -> RpcOutput {
+    println!("{count:?} {b:?}");
     Ok(RpcPayload::Result(json!("bar")))
 }
 
