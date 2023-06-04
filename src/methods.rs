@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
-use crate::types::error::object::ErrorObject;
-use crate::types::{error::code::ErrorCode, params::Params, response::RpcPayload};
+use crate::types::{
+    error::{code::ErrorCode, object::ErrorObject},
+    params::Params,
+    response::RpcPayload,
+};
 use futures_util::{future::BoxFuture, Future};
 use serde::de::DeserializeOwned;
 
