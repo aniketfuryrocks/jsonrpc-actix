@@ -14,10 +14,10 @@ pub struct ErrorObject {
 }
 
 impl ErrorObject {
-    pub fn new(code: impl Into<ErrorCode>, message: String) -> Self {
+    pub fn new(code: impl Into<ErrorCode>, message: impl Into<String>) -> Self {
         Self {
             code: code.into(),
-            message,
+            message: message.into(),
         }
     }
 
