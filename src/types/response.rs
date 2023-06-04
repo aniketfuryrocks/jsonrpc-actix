@@ -12,6 +12,7 @@ pub struct RpcResponse {
     /// A String specifying the version of the JSON-RPC protocol. MUST be exactly "2.0".
     pub jsonrpc: String,
     /// Payload which can be result or error.
+    #[serde(flatten)]
     pub payload: RpcPayload,
     /// This member is REQUIRED.
     /// It MUST be the same as the value of the id member in the Request Object.
