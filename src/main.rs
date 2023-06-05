@@ -2,18 +2,16 @@ use actix_web::{web, App, HttpServer};
 use jsonrpc_actix::{
     handle::rpc_handler,
     methods::{RpcModule, RpcResult},
-    types::response::RpcPayload,
 };
-use serde_json::json;
 
-async fn get_version(_ctx: ()) -> RpcResult {
-    Ok(json!(0.1).into())
+async fn get_version(_ctx: ()) -> RpcResult<u32> {
+    Ok(1)
 }
 
-async fn foo(_ctx: (), count: Option<u32>, b: Option<u32>) -> RpcResult {
+async fn foo(_ctx: (), count: Option<u32>, b: Option<u32>) -> RpcResult<&'static str> {
     println!("{count:?} {b:?}");
 
-    Ok(RpcPayload::Result(json!("bar")))
+    Ok("bar")
 }
 
 #[actix_web::main]

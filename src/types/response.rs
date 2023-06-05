@@ -51,11 +51,19 @@ impl Default for RpcPayload {
     }
 }
 
+
 impl From<ErrorCode> for RpcPayload {
     fn from(code: ErrorCode) -> Self {
         Self::Error(code.into())
     }
 }
+
+impl From<ErrorObject> for RpcPayload {
+    fn from(obj: ErrorObject) -> Self {
+        Self::Error(obj)
+    }
+}
+
 
 impl From<Value> for RpcPayload {
     fn from(value: Value) -> Self {

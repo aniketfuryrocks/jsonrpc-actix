@@ -8,19 +8,24 @@ use crate::types::{
 use futures_util::{future::BoxFuture, Future};
 use serde::de::DeserializeOwned;
 
-pub type RpcResult = Result<RpcPayload, Box<dyn std::error::Error>>;
+pub type RpcResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub trait AsyncFn<Ctx: 'static> {
-    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcResult>, ErrorObject>;
+    fn call(&self, ctx: Ctx, params: Params)
+        -> Result<BoxFuture<'static, RpcPayload>, ErrorObject>;
 }
 
 impl<Func, Fut, Ctx> AsyncFn<Ctx> for Func
 where
     Func: Fn(Ctx, Params) -> Result<Fut, ErrorObject>,
-    Fut: Future<Output = RpcResult> + 'static + Send,
+    Fut: Future<Output = RpcPayload> + 'static + Send,
     Ctx: 'static,
 {
-    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcResult>, ErrorObject> {
+    fn call(
+        &self,
+        ctx: Ctx,
+        params: Params,
+    ) -> Result<BoxFuture<'static, RpcPayload>, ErrorObject> {
         Ok(Box::pin(self(ctx, params)?))
     }
 }
@@ -40,12 +45,12 @@ macro_rules! factor_tuple_inner {
             }
         }
 
-        Ok(($self)($ctx))
+        ($self)($ctx)
     }};
     ($self: ident, $ctx: ident, $params: ident, $($param:ident,)+) => {{
         let mut params = $params.unwrap_or_default().into_iter();
 
-        Ok(($self)($ctx, $({
+        ($self)($ctx, $({
             match serde_json::from_value(params.next().unwrap_or(serde_json::Value::Null)) {
                 Ok($param) => $param,
                 Err(err) => {
@@ -55,16 +60,17 @@ macro_rules! factor_tuple_inner {
                     ))
                 }
             }
-         },)+))
+         },)+)
     }};
 }
 
 macro_rules! factory_tuple ({ $($param:ident)* } => {
-    impl<Func, Fut, Ctx, $($param,)*> IntoAsyncFn<Ctx, ($($param,)*)> for Func
+    impl<Func, Fut, Ctx, T, $($param,)*> IntoAsyncFn<Ctx, ($($param,)*)> for Func
     where
         Func: Fn(Ctx, $($param),*) -> Fut + 'static,
-        Fut: Future<Output = RpcResult> + 'static + Send,
+        Fut: Future<Output = RpcResult<T>> + 'static + Send,
         Ctx: 'static,
+        T: serde::Serialize + 'static,
         $($param:DeserializeOwned + 'static,)*
     {
 
@@ -72,7 +78,17 @@ macro_rules! factory_tuple ({ $($param:ident)* } => {
         #[allow(non_snake_case)]
         fn convert(self) -> Box<dyn AsyncFn<Ctx>> {
             Box::new(move |ctx: Ctx, params: Params| {
-                factor_tuple_inner!(self,ctx, params, $($param,)*)
+                let call = factor_tuple_inner!(self,ctx, params, $($param,)*);
+
+                Ok(async move {
+                     match call.await {
+                        Ok(k) => serde_json::to_value(k).expect("returned type can't be json serialized").into(),
+                        Err(err) => crate::types::error::object::ErrorObject::new(
+                            crate::types::error::code::ErrorCode::InternalError,
+                            format!("{err:?}"),
+                        ).into(),
+                    }
+                })
             })
         }
     }
@@ -118,13 +134,7 @@ impl<Ctx: Clone + 'static> RpcModule<Ctx> {
         };
 
         match call.call(self.ctx.clone(), params) {
-            Ok(call) => match call.await {
-                Ok(k) => k,
-                Err(err) => RpcPayload::Error(ErrorObject::new(
-                    ErrorCode::InternalError,
-                    format!("{err:?}"),
-                )),
-            },
+            Ok(call) => call.await,
             Err(err) => RpcPayload::Error(err),
         }
     }
