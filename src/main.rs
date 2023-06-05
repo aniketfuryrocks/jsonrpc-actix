@@ -1,17 +1,18 @@
 use actix_web::{web, App, HttpServer};
 use jsonrpc_actix::{
     handle::rpc_handler,
-    methods::{RpcModule, RpcOutput},
+    methods::{RpcModule, RpcResult},
     types::response::RpcPayload,
 };
 use serde_json::json;
 
-async fn get_version(_ctx: ()) -> RpcOutput {
-    Ok(RpcPayload::Result(json!(0.1)))
+async fn get_version(_ctx: ()) -> RpcResult {
+    Ok(json!(0.1).into())
 }
 
-async fn foo(_ctx: (), count: Option<u32>, b: Option<u32>) -> RpcOutput {
+async fn foo(_ctx: (), count: Option<u32>, b: Option<u32>) -> RpcResult {
     println!("{count:?} {b:?}");
+
     Ok(RpcPayload::Result(json!("bar")))
 }
 

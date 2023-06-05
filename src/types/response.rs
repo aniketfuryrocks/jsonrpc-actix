@@ -57,6 +57,12 @@ impl From<ErrorCode> for RpcPayload {
     }
 }
 
+impl From<Value> for RpcPayload {
+    fn from(value: Value) -> Self {
+        Self::Result(value)
+    }
+}
+
 impl Default for RpcResponse {
     fn default() -> Self {
         Self {

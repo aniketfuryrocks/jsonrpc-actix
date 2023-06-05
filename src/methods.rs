@@ -8,19 +8,19 @@ use crate::types::{
 use futures_util::{future::BoxFuture, Future};
 use serde::de::DeserializeOwned;
 
-pub type RpcOutput = Result<RpcPayload, Box<dyn std::error::Error + Send>>;
+pub type RpcResult = Result<RpcPayload, Box<dyn std::error::Error>>;
 
 pub trait AsyncFn<Ctx: 'static> {
-    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcOutput>, ErrorObject>;
+    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcResult>, ErrorObject>;
 }
 
 impl<Func, Fut, Ctx> AsyncFn<Ctx> for Func
 where
     Func: Fn(Ctx, Params) -> Result<Fut, ErrorObject>,
-    Fut: Future<Output = RpcOutput> + 'static + Send,
+    Fut: Future<Output = RpcResult> + 'static + Send,
     Ctx: 'static,
 {
-    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcOutput>, ErrorObject> {
+    fn call(&self, ctx: Ctx, params: Params) -> Result<BoxFuture<'static, RpcResult>, ErrorObject> {
         Ok(Box::pin(self(ctx, params)?))
     }
 }
@@ -63,7 +63,7 @@ macro_rules! factory_tuple ({ $($param:ident)* } => {
     impl<Func, Fut, Ctx, $($param,)*> IntoAsyncFn<Ctx, ($($param,)*)> for Func
     where
         Func: Fn(Ctx, $($param),*) -> Fut + 'static,
-        Fut: Future<Output = RpcOutput> + 'static + Send,
+        Fut: Future<Output = RpcResult> + 'static + Send,
         Ctx: 'static,
         $($param:DeserializeOwned + 'static,)*
     {
@@ -112,14 +112,20 @@ impl<Ctx: Clone + 'static> RpcModule<Ctx> {
         }
     }
 
-    pub async fn call(&self, method: &str, params: Params) -> RpcOutput {
+    pub async fn call(&self, method: &str, params: Params) -> RpcPayload {
         let Some(call) = self.methods.get(method) else {
-            return Ok(ErrorCode::MethodNotFound.into());
+            return ErrorCode::MethodNotFound.into();
         };
 
         match call.call(self.ctx.clone(), params) {
-            Ok(call) => call.await,
-            Err(err) => Ok(RpcPayload::Error(err)),
+            Ok(call) => match call.await {
+                Ok(k) => k,
+                Err(err) => RpcPayload::Error(ErrorObject::new(
+                    ErrorCode::InternalError,
+                    format!("{err:?}"),
+                )),
+            },
+            Err(err) => RpcPayload::Error(err),
         }
     }
 

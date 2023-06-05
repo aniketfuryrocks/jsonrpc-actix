@@ -15,13 +15,13 @@ pub async fn rpc_handler<Ctx: Clone + 'static>(
        return Ok(HttpResponse::Ok()
            .content_type("application/json")
            .body(RpcResponse {
-            payload: ErrorCode::ParseError.into(),
-            ..Default::default()
+                payload: ErrorCode::ParseError.into(),
+                ..Default::default()
             }.dump())
         );
     };
 
-    let payload = app_state.call(&method, params).await.expect("temprory");
+    let payload = app_state.call(&method, params).await;
 
     let result = RpcResponse {
         jsonrpc,
